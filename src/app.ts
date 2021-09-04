@@ -12,6 +12,17 @@ client.once('ready', () => {
 	console.log('Ready!');
 });
 
+// Listen for commands
+client.on('interactionCreate', async (interaction): Promise<void> => {
+	if (!interaction.isCommand()) return;
+
+	const { commandName } = interaction;
+
+	if (commandName === 'collapse') {
+		await interaction.reply('The void begins to rumble...');
+	}
+});
+
 // Login to Discord with your client's token
 client.login(process.env.TOKEN).then(() => {
     console.log('Logged in!')
