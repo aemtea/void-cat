@@ -4,6 +4,7 @@
   "description": "Discord Bot that acts as a medium for The Void",
   "main": "out/app.js",
   "dependencies": {
+    "@discordjs/rest": "^0.1.0-canary.0",
     "discord-api-types": "^0.22.0",
     "discord.js": "^13.1.0",
     "dotenv": "^10.0.0"
