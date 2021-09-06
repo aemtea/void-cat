@@ -1,22 +1,20 @@
 import util from 'util';
+import dotenv from 'dotenv';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction, InteractionReplyOptions, ThreadChannel } from 'discord.js';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
-import dotenv from 'dotenv';
 
 dotenv.config();
 const wait = util.promisify(setTimeout);
 
 const theVoidString = 'the-void';
-const token: string = process.env.TOKEN!;
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('collapse')
         .setDescription('Collapses the void into nothingness.'),
     async execute(interaction: CommandInteraction) {
-        const rest = new REST({ version: '9' }).setToken(token);
         const theVoid = interaction.guild?.channels.cache.find(x => x.name === theVoidString);
 
         if (!theVoid) {
@@ -43,6 +41,7 @@ module.exports = {
         await wait(10000);
 
         try {
+            const rest = new REST({ version: '9' }).setToken(process.env.TOKEN!);
             await rest.delete(Routes.channel(theVoid.id));
 
             if (interaction.channelId != theVoid.id) {
@@ -52,7 +51,10 @@ module.exports = {
                 });
             }
         } catch (err) {
-            await interaction.followUp('The void stabilizes unexpectedly.');
+            await interaction.followUp(<InteractionReplyOptions>{
+                content: 'The void stabilizes unexpectedly.',
+                ephemeral: true
+            });
             console.log(err);
         }
     },

@@ -1,9 +1,8 @@
 // Require the necessary discord.js classes
 import path from 'path';
 import fs from 'fs';
-import { Client, Collection, Intents } from 'discord.js';
-import { SlashCommandBuilder } from '@discordjs/builders';
 import dotenv from 'dotenv';
+import { Client, Collection, Intents } from 'discord.js';
 
 dotenv.config();
 
@@ -34,8 +33,6 @@ for (const file of commandFiles) {
 }
 
 // Login to Discord with your client's token
-client.login(process.env.TOKEN).then(() => {
-    console.log('Logged in!')
-}).catch((err) => {
+client.login(process.env.TOKEN).catch((err) => {
     console.log(err)
 });

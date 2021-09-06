@@ -1,4 +1,4 @@
-import { BaseClient, Client } from "discord.js";
+import { Client } from "discord.js";
 
 // When the client is ready, run this code (only once)
 module.exports = {

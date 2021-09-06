@@ -1,7 +1,8 @@
+import path from 'path';
 import fs from 'fs';
+import dotenv from 'dotenv';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v9';
-import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -10,10 +11,12 @@ const clientId: string = process.env.CLIENT_ID!;
 const guildId: string = process.env.GUILD_ID!;
 
 const commands = [];
-const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
+const commandsPath = path.resolve(__dirname, '../commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
-    const command = require(`./commands/${file}`);
+    const filePath = path.resolve(commandsPath, file);
+    const command = require(filePath);
     commands.push(command.data.toJSON());
 }
 
