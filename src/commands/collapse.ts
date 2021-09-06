@@ -36,7 +36,7 @@ module.exports = {
 
         const rumblingIntensifies = 'Rumbling intensifies...';
         await interaction.followUp(<InteractionReplyOptions>{
-            content: beginRumbling,
+            content: rumblingIntensifies,
             ephemeral: true
         });
         (<ThreadChannel>theVoid).send(rumblingIntensifies);
