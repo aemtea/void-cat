@@ -4,9 +4,9 @@ Node.js Discord Bot that acts as a medium for The Void
 <img src="voidcat.png" alt="void cat" width="400"/>
 
 ## Setup
-The Void is developed using using [Discord.js](https://github.com/discordjs/discord.js) which requires [Node.js 16.6.0](https://nodejs.org/en/download/current/) or newer.
+Void Cat is developed using using [Discord.js](https://github.com/discordjs/discord.js) which requires [Node.js 16.6.0](https://nodejs.org/en/download/current/) or newer.
 
-The Void uses [dotenv](https://github.com/motdotla/dotenv) to manage sensitive variables. At the minimum, your `.env` file will need `TOKEN` to run. `GUILD_ID` refers to a discord server id.
+[dotenv](https://github.com/motdotla/dotenv) is used to manage sensitive variables. At the minimum, your `.env` file will need `TOKEN` to run. `GUILD_ID` refers to a discord server id.
 
 ```
 TOKEN=[bot token]
