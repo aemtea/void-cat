@@ -1,9 +1,11 @@
 import dotenv from 'dotenv';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions } from 'discord.js';
+import { CommandInteraction, GuildChannelCreateOptions, InteractionDeferReplyOptions, InteractionReplyOptions } from 'discord.js';
+// import { ChannelTypes } from 'discord.js/typings/enums';
 
 dotenv.config();
 
+const housePlantZoneString = 'HOUSEPLANT ZONE';
 const theVoidString = 'the-void';
 
 module.exports = {
@@ -25,9 +27,21 @@ module.exports = {
         await interaction.deferReply(<InteractionDeferReplyOptions>{
             ephemeral: true
         });
-        
+
         try {
-            interaction.guild?.channels.create(theVoidString);
+            let housePlantZone = interaction.guild?.channels.cache.find(x => x.name === housePlantZoneString && x.type == 'GUILD_CATEGORY');
+
+            if (!housePlantZone) {
+                housePlantZone = await interaction.guild?.channels.create(housePlantZoneString, <GuildChannelCreateOptions>{
+                    type: 4 //ChannelTypes.GUILD_CATEGORY
+                });
+            }
+
+            await interaction.guild?.channels.create(theVoidString, <GuildChannelCreateOptions>{
+                nsfw: true,
+                parent: housePlantZone?.id
+            });
+
             await interaction.editReply(<InteractionReplyOptions>{
                 content: initializeString,
                 ephemeral: true
