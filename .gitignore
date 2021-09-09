@@ -107,4 +107,6 @@ dist
 .tern-port
 
 # VS Code settings
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
