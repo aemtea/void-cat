@@ -27,7 +27,7 @@ module.exports = {
                 content: beginRumbling,
                 ephemeral: true
             });
-            theVoid.send(beginRumbling);
+            await theVoid.send(beginRumbling);
             await wait(10000);
 
             const rumblingIntensifies = 'Rumbling intensifies...';
@@ -35,10 +35,10 @@ module.exports = {
                 content: rumblingIntensifies,
                 ephemeral: true
             });
-            theVoid.send(rumblingIntensifies);
+            await theVoid.send(rumblingIntensifies);
             await wait(10000);
 
-            theVoid.delete();
+            await theVoid.delete();
 
             if (interaction.channelId != theVoid.id) {
                 await interaction.followUp(<InteractionReplyOptions>{
