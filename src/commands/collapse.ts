@@ -2,8 +2,6 @@ import util from 'util';
 import dotenv from 'dotenv';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { CommandInteraction, InteractionReplyOptions, ThreadChannel } from 'discord.js';
-import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
 
 dotenv.config();
 const wait = util.promisify(setTimeout);
@@ -41,8 +39,7 @@ module.exports = {
         await wait(10000);
 
         try {
-            const rest = new REST({ version: '9' }).setToken(process.env.TOKEN!);
-            await rest.delete(Routes.channel(theVoid.id));
+            theVoid.delete();
 
             if (interaction.channelId != theVoid.id) {
                 await interaction.followUp(<InteractionReplyOptions>{
