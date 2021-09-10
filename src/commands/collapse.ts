@@ -1,44 +1,43 @@
 import util from 'util';
 import dotenv from 'dotenv';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, InteractionReplyOptions, ThreadChannel } from 'discord.js';
+import { CommandInteraction, InteractionReplyOptions } from 'discord.js';
+import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 dotenv.config();
 const wait = util.promisify(setTimeout);
-
-const theVoidString = 'the-void';
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('collapse')
         .setDescription('Collapses the void into nothingness.'),
     async execute(interaction: CommandInteraction) {
-        const theVoid = interaction.guild?.channels.cache.find(x => x.name === theVoidString);
+        try {
+            var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
-        if (!theVoid) {
+            if (!theVoid) {
+                await interaction.reply(<InteractionReplyOptions>{
+                    content: 'There is no void to collapse.',
+                    ephemeral: true
+                });
+                return;
+            }
+            const beginRumbling = 'The void begins to rumble...';
             await interaction.reply(<InteractionReplyOptions>{
-                content: 'There is no void to collapse.',
+                content: beginRumbling,
                 ephemeral: true
             });
-            return;
-        }
-        const beginRumbling = 'The void begins to rumble...';
-        await interaction.reply(<InteractionReplyOptions>{
-            content: beginRumbling,
-            ephemeral: true
-        });
-        (<ThreadChannel>theVoid).send(beginRumbling);
-        await wait(10000);
+            theVoid.send(beginRumbling);
+            await wait(10000);
 
-        const rumblingIntensifies = 'Rumbling intensifies...';
-        await interaction.followUp(<InteractionReplyOptions>{
-            content: rumblingIntensifies,
-            ephemeral: true
-        });
-        (<ThreadChannel>theVoid).send(rumblingIntensifies);
-        await wait(10000);
+            const rumblingIntensifies = 'Rumbling intensifies...';
+            await interaction.followUp(<InteractionReplyOptions>{
+                content: rumblingIntensifies,
+                ephemeral: true
+            });
+            theVoid.send(rumblingIntensifies);
+            await wait(10000);
 
-        try {
             theVoid.delete();
 
             if (interaction.channelId != theVoid.id) {
