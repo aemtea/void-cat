@@ -8,15 +8,10 @@ export const data = new SlashCommandBuilder()
 
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
     try {
-        await interaction.deferReply(<InteractionDeferReplyOptions>{
-            ephemeral: true
-        });
+        await interaction.deferReply();
 
         eventEmitter.emit('stabilize', interaction, async (interaction: CommandInteraction) => {
-            await interaction.editReply(<InteractionReplyOptions>{
-                content: 'The void stabilizes.',
-                ephemeral: true
-            });
+            await interaction.editReply('The void stabilizes.');
         });
     } catch (err) {
         await interaction.editReply(<InteractionReplyOptions>{

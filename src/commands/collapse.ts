@@ -26,13 +26,13 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             return;
         }
 
-        await interaction.deferReply(<InteractionDeferReplyOptions>{
-            ephemeral: true
-        });
-
         var immediate = interaction.options.getBoolean('immediate');
 
         if (immediate) {
+            await interaction.deferReply(<InteractionDeferReplyOptions>{
+                ephemeral: true
+            });
+
             const row = new MessageActionRow()
                 .addComponents(
                     new MessageButton()
@@ -59,9 +59,10 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             collector?.on('collect', async (i: ButtonInteraction) => {
                 if (i.customId === 'collapseImmediate') {
                     await theVoid!.delete();
-                    await i.update(<InteractionDeferUpdateOptions>{ content: 'The void vanishes without a trace.', components: [] })
+                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapsing the void...', components: [] })
+                    await i.followUp('The void vanishes without a trace.')
                 } else if (i.customId === 'collapseCancel') {
-                    await i.update(<InteractionDeferUpdateOptions>{ content: 'The void stabilizes.', components: [] })
+                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapse cancelled.', components: [] })
                 }
             });
 
@@ -91,16 +92,8 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 callback(i);
             });
 
-            if (stabilized) {
-                await theVoid.send(voidStabilizesString);
-                return;
-            }
-
             const beginRumbling = 'The void begins to rumble...';
-            await interaction.editReply(<InteractionReplyOptions>{
-                content: beginRumbling,
-                ephemeral: true
-            });
+            await interaction.reply(beginRumbling);
             await theVoid.send(beginRumbling);
 
             if (await isVoidStabilized(10)) {
@@ -108,8 +101,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 return;
             }
 
-            const rumblingIntensifies = 'Rumbling intensifies...';
-            await theVoid.send(rumblingIntensifies);
+            await theVoid.send('Rumbling intensifies...');
 
             if (await isVoidStabilized(10)) {
                 await theVoid.send(voidStabilizesString);
@@ -119,17 +111,11 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             await theVoid.delete();
 
             if (interaction.channelId != theVoid.id) {
-                await interaction.followUp(<InteractionReplyOptions>{
-                    content: 'The void vanishes without a trace.',
-                    ephemeral: true
-                });
+                await interaction.followUp('The void vanishes without a trace.');
             }
         }
     } catch (err) {
-        await interaction.followUp(<InteractionReplyOptions>{
-            content: 'The void stabilizes unexpectedly.',
-            ephemeral: true
-        });
+        await interaction.followUp('The void stabilizes unexpectedly.');
         console.log(err);
     }
 }
