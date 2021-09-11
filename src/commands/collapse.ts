@@ -1,4 +1,5 @@
 import util from 'util';
+import EventEmitter from 'events';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton } from 'discord.js';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
@@ -13,7 +14,7 @@ export const data = new SlashCommandBuilder()
             .setDescription('Immediately collapses the void.')
             .setRequired(false))
 
-export const execute = async (interaction: CommandInteraction) => {
+export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
     try {
         var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
@@ -66,21 +67,54 @@ export const execute = async (interaction: CommandInteraction) => {
 
             collector?.on('end', (collected: Collection<string, ButtonInteraction>) => console.log(`Collectoed ${collected.size} items`));
         } else {
+            let stabilized = false;
+            const voidStabilizesString = 'The void stabilizes.';
+
+            const isVoidStabilized = async (secondsToCheck: number): Promise<boolean> => {
+                for (let i = 0; i < secondsToCheck; i++) {
+                    if (stabilized) {
+                        return true;
+                    }
+                    await wait(1000);
+                }
+
+                return false;
+            }
+
+            eventEmitter.once('stabilize', async (i: CommandInteraction, callback: (interaction: CommandInteraction) => Promise<void>) => {
+                stabilized = true;
+                await interaction.followUp(<InteractionReplyOptions>{
+                    content: `Void stabilized by ${i.user}`,
+                    ephemeral: true
+                });
+
+                callback(i);
+            });
+
+            if (stabilized) {
+                await theVoid.send(voidStabilizesString);
+                return;
+            }
+
             const beginRumbling = 'The void begins to rumble...';
             await interaction.editReply(<InteractionReplyOptions>{
                 content: beginRumbling,
                 ephemeral: true
             });
             await theVoid.send(beginRumbling);
-            await wait(10000);
+
+            if (await isVoidStabilized(10)) {
+                await theVoid.send(voidStabilizesString);
+                return;
+            }
 
             const rumblingIntensifies = 'Rumbling intensifies...';
-            await interaction.followUp(<InteractionReplyOptions>{
-                content: rumblingIntensifies,
-                ephemeral: true
-            });
             await theVoid.send(rumblingIntensifies);
-            await wait(10000);
+
+            if (await isVoidStabilized(10)) {
+                await theVoid.send(voidStabilizesString);
+                return;
+            }
 
             await theVoid.delete();
 
