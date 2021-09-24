@@ -6,15 +6,31 @@ import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 const wait = util.promisify(setTimeout);
 
+let collapseInProgress = false;
+
 export const data = new SlashCommandBuilder()
     .setName('collapse')
     .setDescription('Collapses the void into nothingness.')
-    .addBooleanOption(option =>
-        option.setName('immediate')
-            .setDescription('Immediately collapses the void.')
-            .setRequired(false))
+    .addSubcommand(subcommand =>
+        subcommand.setName('later')
+            .setDescription('Collapses the void in a set amount of time.')
+            .addIntegerOption(option =>
+                option.setName('minutes')
+                    .setDescription('Number of minutes until void collapse.')
+                    .setRequired(true)))
+    .addSubcommand(subcommand =>
+        subcommand.setName('now')
+            .setDescription('Immediately collapses the void.'))
 
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
+    if (collapseInProgress) {
+        await interaction.reply(<InteractionReplyOptions>{
+            content: 'Void collapse is in process.',
+            ephemeral: true
+        });
+        return;
+    }
+
     try {
         var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
@@ -26,9 +42,9 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             return;
         }
 
-        var immediate = interaction.options.getBoolean('immediate');
+        collapseInProgress = true;
 
-        if (immediate) {
+        if (interaction.options.getSubcommand() === 'now') {
             await interaction.deferReply(<InteractionDeferReplyOptions>{
                 ephemeral: true
             });
@@ -67,7 +83,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             });
 
             collector?.on('end', (collected: Collection<string, ButtonInteraction>) => console.log(`Collectoed ${collected.size} items`));
-        } else {
+        } else if (interaction.options.getSubcommand() === 'later') {
             let stabilized = false;
             const voidStabilizesString = 'The void stabilizes.';
 
@@ -82,6 +98,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 return false;
             }
 
+            //Listen for the stabilize command while a collapse is in progress
             eventEmitter.once('stabilize', async (i: CommandInteraction, callback: (interaction: CommandInteraction) => Promise<void>) => {
                 stabilized = true;
                 await interaction.followUp(<InteractionReplyOptions>{
@@ -92,18 +109,29 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 callback(i);
             });
 
-            const beginRumbling = 'The void begins to rumble...';
-            await interaction.reply(beginRumbling);
-            await theVoid.send(beginRumbling);
+            let minutesUntilCollapse = interaction.options.getInteger('minutes', true);
 
-            if (await isVoidStabilized(10)) {
-                await theVoid.send(voidStabilizesString);
-                return;
+            //Split collapse into chunks
+            let chunks = 5;
+            let minutesChunks = minutesUntilCollapse / chunks;
+            for (let i = 0; i < chunks; i++) {
+                if (i === 0) {
+                    const beginRumbling = 'The void begins to rumble...';
+                    await interaction.reply(beginRumbling);
+                    await theVoid.send(beginRumbling);
+                } else {
+                    await theVoid.send(getRandomCollapsingString());
+                }
+
+                if (await isVoidStabilized(minutesChunks * 60)) {
+                    await theVoid.send(voidStabilizesString);
+                    return;
+                }
             }
 
-            await theVoid.send('Rumbling intensifies...');
-
-            if (await isVoidStabilized(10)) {
+            //Give a final notice one minute before collapsing
+            await theVoid.send('The void is almost no more. Have you accepted its fate?');
+            if (await isVoidStabilized(60)) {
                 await theVoid.send(voidStabilizesString);
                 return;
             }
@@ -117,5 +145,25 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
     } catch (err) {
         await interaction.followUp('The void stabilizes unexpectedly.');
         console.log(err);
+    } finally {
+        collapseInProgress = false
     }
+}
+
+const getRandomCollapsingString = (): string => {
+    const collapsingStrings = [
+        'The rumbling intensifies in all directions',
+        'Your bones are being rattled to their core',
+        'Throw your secrets into the darkness',
+        'The lights are flickering spookily',
+        'Your body begins to stretch as it spaghettifies'
+    ];
+    const index = getRandomIntInclusive(0, collapsingStrings.length - 1);
+    return collapsingStrings[index];
+}
+
+const getRandomIntInclusive = (min: number, max: number) => {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
 }
