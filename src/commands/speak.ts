@@ -21,17 +21,11 @@ export const execute = async (interaction: CommandInteraction) => {
             });
             return;
         }
-        await interaction.deferReply(<InteractionDeferReplyOptions>{
-            ephemeral: true
-        });
+        await interaction.deferReply();
         var incantation = interaction.options.getString('incantation');
 
         await theVoid.send(incantation!);
-
-        await interaction.editReply(<InteractionReplyOptions>{
-            content: 'Your incantation has been spoken.',
-            ephemeral: true
-        });
+        await interaction.editReply(`Void Cat repeats your incantation: "${incantation}"`);
     } catch (err) {
         await interaction.editReply(<InteractionReplyOptions>{
             content: 'The void refuses your incantation.',
