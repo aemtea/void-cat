@@ -14,6 +14,8 @@
     "typescript": "^4.4.2"
   },
   "scripts": {
+    "build": "npm install --only=dev && tsc",
+    "start": "node out/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
