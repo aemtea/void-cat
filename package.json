@@ -26,5 +26,8 @@
     "url": "https://github.com/aemtea/the-void/issues"
   },
   "homepage": "https://github.com/aemtea/the-void#readme",
-  "type": "commonjs"
+  "type": "commonjs",
+  "engines": {
+    "node": ">=16.6.0"
+  }
 }
