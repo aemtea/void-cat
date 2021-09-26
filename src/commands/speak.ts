@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions } from "discord.js";
+import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from "discord.js";
 import { VoidInteractionUtils } from "../utils/voidInteractionUtils";
 
 export const data = new SlashCommandBuilder()
@@ -12,6 +12,15 @@ export const data = new SlashCommandBuilder()
 
 export const execute = async (interaction: CommandInteraction) => {
     try {
+        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
+        if (!permissions.has('MANAGE_CHANNELS')) {
+            await interaction.reply(<InteractionReplyOptions>{
+                content: 'You don\'t have permissions to do that. Sorry!',
+                ephemeral: true
+            });
+            return;
+        }
+
         var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (!theVoid) {
