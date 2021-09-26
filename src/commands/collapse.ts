@@ -1,7 +1,7 @@
 import util from 'util';
 import EventEmitter from 'events';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton } from 'discord.js';
+import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, Permissions } from 'discord.js';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 const wait = util.promisify(setTimeout);
@@ -23,15 +23,24 @@ export const data = new SlashCommandBuilder()
             .setDescription('Immediately collapses the void.'))
 
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
-    if (collapseInProgress) {
-        await interaction.reply(<InteractionReplyOptions>{
-            content: 'Void collapse is in process.',
-            ephemeral: true
-        });
-        return;
-    }
-
     try {
+        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
+        if (!permissions.has('MANAGE_CHANNELS')) {
+            await interaction.reply(<InteractionReplyOptions>{
+                content: 'You don\'t have permissions to do that. Sorry!',
+                ephemeral: true
+            });
+            return;
+        }
+
+        if (collapseInProgress) {
+            await interaction.reply(<InteractionReplyOptions>{
+                content: 'Void collapse is in process.',
+                ephemeral: true
+            });
+            return;
+        }
+
         var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (!theVoid) {
