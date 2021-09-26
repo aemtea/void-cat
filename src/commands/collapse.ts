@@ -85,7 +85,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 if (i.customId === 'collapseImmediate') {
                     await theVoid!.delete();
                     await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapsing the void...', components: [] })
-                    await i.followUp('The void vanishes without a trace.')
+                    await i.followUp(`Void collapsed by ${interaction.user}.`)
                 } else if (i.customId === 'collapseCancel') {
                     await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapse cancelled.', components: [] })
                 }
