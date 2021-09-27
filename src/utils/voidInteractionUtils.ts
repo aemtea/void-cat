@@ -5,7 +5,7 @@ const _voidChannelString = 'the-void';
 
 export module VoidInteractionUtils {
     export const getVoidCategory = (interaction: CommandInteraction): CategoryChannel => {
-        const voidCategory = <CategoryChannel>interaction.guild?.channels.cache.find(x => x.name === _voidCategoryString && x.type == 'GUILD_CATEGORY');
+        const voidCategory = <CategoryChannel>interaction.guild?.channels.cache.find(x => x.name.toUpperCase() === _voidCategoryString && x.type == 'GUILD_CATEGORY');
 
         return voidCategory;
     }
@@ -16,7 +16,7 @@ export module VoidInteractionUtils {
             return null
         }
 
-        const voidChannel = <ThreadChannel>interaction.guild?.channels.cache.find(x => x.name === _voidChannelString && x.parentId == voidCategory?.id);
+        const voidChannel = <ThreadChannel>interaction.guild?.channels.cache.find(x => x.name.toLowerCase() === _voidChannelString && x.parentId == voidCategory?.id);
 
         return voidChannel;
     }
