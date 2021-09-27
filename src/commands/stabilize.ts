@@ -1,6 +1,7 @@
 import EventEmitter from 'events';
 import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
+import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 export const data = new SlashCommandBuilder()
     .setName('stabilize')
@@ -12,6 +13,16 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
         if (!permissions.has('MANAGE_CHANNELS')) {
             await interaction.reply(<InteractionReplyOptions>{
                 content: 'You don\'t have permissions to do that. Sorry!',
+                ephemeral: true
+            });
+            return;
+        }
+
+        const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+
+        if (!theVoid) {
+            await interaction.reply(<InteractionReplyOptions>{
+                content: 'There is no void to stabilize.',
                 ephemeral: true
             });
             return;
