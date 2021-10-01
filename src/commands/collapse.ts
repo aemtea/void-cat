@@ -7,6 +7,7 @@ import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 const wait = util.promisify(setTimeout);
 
 let collapseInProgress = false;
+let collapseDate: Date | null = null;
 
 export const data = new SlashCommandBuilder()
     .setName('collapse')
@@ -19,6 +20,9 @@ export const data = new SlashCommandBuilder()
                     .setDescription('Number of minutes until void collapse.')
                     .setRequired(true)))
     .addSubcommand(subcommand =>
+        subcommand.setName('info')
+            .setDescription('Gets info about collapse in progress.'))
+    .addSubcommand(subcommand =>
         subcommand.setName('now')
             .setDescription('Immediately collapses the void.'))
 
@@ -30,6 +34,19 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 content: 'You don\'t have permissions to do that. Sorry!',
                 ephemeral: true
             });
+            return;
+        }
+
+        if (interaction.options.getSubcommand() === 'info') {
+            if (!collapseDate) {
+                await interaction.reply('No collapse in progress.');
+                return;
+            }
+
+            //Get difference in minutes to 2 decimals
+            let now = new Date();
+            let minutesUntilCollapse = ((collapseDate?.getTime() - now.getTime()) / 1000 / 60).toFixed(2);
+            await interaction.reply(`Void will collapse in ${minutesUntilCollapse} minutes.`);
             return;
         }
 
@@ -95,54 +112,62 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
         } else if (interaction.options.getSubcommand() === 'later') {
             let stabilized = false;
             const voidStabilizesString = 'The void stabilizes.';
+            let minutesInput = interaction.options.getInteger('minutes', true);
 
-            const isVoidStabilized = async (secondsToCheck: number): Promise<boolean> => {
-                for (let i = 0; i < secondsToCheck; i++) {
-                    if (stabilized) {
-                        return true;
-                    }
-                    await wait(1000);
-                }
-
-                return false;
+            if (minutesInput < 1) {
+                await interaction.reply(<InteractionReplyOptions>{
+                    content: 'Minutes must be greater than or equal to 1.',
+                    ephemeral: true
+                });
+                return;
             }
 
+            //Add minutes input to current time
+            collapseDate = new Date(Date.now() + minutesInput * 60000);
+
             //Listen for the stabilize command while a collapse is in progress
-            eventEmitter.once('stabilize', async (i: CommandInteraction, callback: (interaction: CommandInteraction) => Promise<void>) => {
+            eventEmitter.once('stabilize', async (stabilizeInteraction: CommandInteraction, callback: (collapseInteraction: CommandInteraction) => Promise<void>) => {
                 stabilized = true;
+                collapseDate = null;
                 await interaction.followUp(<InteractionReplyOptions>{
-                    content: `Void stabilized by ${i.user}`,
+                    content: `Void stabilized by ${stabilizeInteraction.user}`,
                     ephemeral: true
                 });
 
-                callback(i);
+                callback(stabilizeInteraction);
             });
-
-            let minutesUntilCollapse = interaction.options.getInteger('minutes', true);
 
             //Split collapse into chunks
             let chunks = 5;
-            let minutesChunks = minutesUntilCollapse / chunks;
-            for (let i = 0; i < chunks; i++) {
-                if (i === 0) {
-                    const beginRumbling = 'The void begins to rumble...';
-                    await interaction.reply(beginRumbling);
-                    await theVoid.send(beginRumbling);
-                } else {
-                    await theVoid.send(getRandomCollapsingString());
-                }
+            let secondsUntilCollapse = minutesInput * 60;
 
-                if (await isVoidStabilized(minutesChunks * 60)) {
+            await interaction.deferReply();
+            for (let i = 0; i < secondsUntilCollapse; i++) {
+                if (stabilized) {
                     await theVoid.send(voidStabilizesString);
                     return;
                 }
-            }
 
-            //Give a final notice one minute before collapsing
-            await theVoid.send('The void is almost no more. Have you accepted its fate?');
-            if (await isVoidStabilized(60)) {
-                await theVoid.send(voidStabilizesString);
-                return;
+                await wait(1000);
+
+                if (i === 0) {
+                    const beginRumbling = 'The void begins to rumble...';
+                    await interaction.editReply(beginRumbling);
+                    await theVoid.send(beginRumbling);
+                    continue;
+                }
+                
+                if (i + 1 === secondsUntilCollapse - 60) {
+                    //Give a final notice one minute before collapsing
+                    await theVoid.send('The void is almost no more. Have you accepted its fate?');
+                    continue;
+                } else if (i + 1 > secondsUntilCollapse - 60) {
+                    continue;
+                }
+
+                if ((i + 1) % (secondsUntilCollapse / chunks) === 0) {
+                    await theVoid.send(getRandomCollapsingString());
+                }
             }
 
             await theVoid.delete();
@@ -150,12 +175,14 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             if (interaction.channelId != theVoid.id) {
                 await interaction.followUp('The void vanishes without a trace.');
             }
+
+            collapseDate = null;
         }
     } catch (err) {
         await interaction.followUp('The void stabilizes unexpectedly.');
         console.log(err);
     } finally {
-        collapseInProgress = false
+        collapseInProgress = false;
     }
 }
 
@@ -165,7 +192,8 @@ const getRandomCollapsingString = (): string => {
         'Your bones are being rattled to their core',
         'Throw your secrets into the darkness',
         'The lights are flickering spookily',
-        'Your body begins to stretch as it spaghettifies'
+        'Your body begins to stretch as it spaghettifies',
+        'AHHHHHHHH'
     ];
     const index = getRandomIntInclusive(0, collapsingStrings.length - 1);
     return collapsingStrings[index];
