@@ -28,6 +28,14 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             return;
         }
 
+        if (eventEmitter.listenerCount('stabilize') === 0) {
+            await interaction.reply(<InteractionReplyOptions>{
+                content: 'No collapse in progress.',
+                ephemeral: true
+            });
+            return;
+        }
+
         await interaction.deferReply();
 
         eventEmitter.emit('stabilize', interaction, async (interaction: CommandInteraction) => {
