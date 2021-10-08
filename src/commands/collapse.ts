@@ -14,17 +14,25 @@ export const data = new SlashCommandBuilder()
     .setDescription('Collapses the void into nothingness.')
     .addSubcommand(subcommand =>
         subcommand.setName('later')
-            .setDescription('Collapses the void in a set amount of time.')
+            .setDescription('Collapses the void in a set amount of time. Recreates the void by default.')
             .addIntegerOption(option =>
                 option.setName('minutes')
                     .setDescription('Number of minutes until void collapse.')
-                    .setRequired(true)))
+                    .setRequired(true))
+            .addBooleanOption(option =>
+                option.setName('smother')
+                    .setDescription('Will not recreate the void if true.')
+                    .setRequired(false)))
     .addSubcommand(subcommand =>
         subcommand.setName('info')
             .setDescription('Gets info about collapse in progress.'))
     .addSubcommand(subcommand =>
         subcommand.setName('now')
-            .setDescription('Immediately collapses the void.'))
+            .setDescription('Immediately collapses the void. Recreates the void by default.')
+            .addBooleanOption(option =>
+                option.setName('smother')
+                    .setDescription('Will not recreate the void if true.')
+                    .setRequired(false)))
 
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
     try {
@@ -84,7 +92,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 )
                 .addComponents(
                     new MessageButton()
-                        .setCustomId('collapseImmediate')
+                        .setCustomId('collapseNow')
                         .setLabel('Collapse')
                         .setStyle(4) //DANGER
                 );
@@ -99,12 +107,22 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             const collector = interaction.channel?.createMessageComponentCollector({ filter, time: 15000 });
 
             collector?.on('collect', async (i: ButtonInteraction) => {
-                if (i.customId === 'collapseImmediate') {
+                if (i.customId === 'collapseNow') {
+                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapsing the void...', components: [] });
                     await theVoid!.delete();
-                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapsing the void...', components: [] })
-                    await i.followUp(`Void collapsed by ${interaction.user}.`)
+
+                    if (interaction.options.getBoolean('smother')) {
+                        if (interaction.channelId != theVoid?.id) {
+                            await i.followUp(`Void collapsed by ${interaction.user}.`);
+                        }
+                    } else {
+                        if (interaction.channelId != theVoid?.id) {
+                            VoidInteractionUtils.createVoidChannel(interaction);
+                            await i.followUp(`Void collapsed by ${interaction.user}. It reappears in an instant.`);
+                        }
+                    }
                 } else if (i.customId === 'collapseCancel') {
-                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapse cancelled.', components: [] })
+                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapse cancelled.', components: [] });
                 }
             });
 
@@ -156,7 +174,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                     await theVoid.send(beginRumbling);
                     continue;
                 }
-                
+
                 if (i + 1 === secondsUntilCollapse - 60) {
                     //Give a final notice one minute before collapsing
                     await theVoid.send('The void is almost no more. Have you accepted its fate?');
@@ -172,8 +190,16 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
 
             await theVoid.delete();
 
-            if (interaction.channelId != theVoid.id) {
-                await interaction.followUp('The void vanishes without a trace.');
+            if (interaction.options.getBoolean('smother')) {
+                if (interaction.channelId != theVoid.id) {
+                    await interaction.followUp('The void vanishes without a trace.');
+                }
+            } else {
+                VoidInteractionUtils.createVoidChannel(interaction);
+
+                if (interaction.channelId != theVoid.id) {
+                    await interaction.followUp('The void collapses and reappears in an instant.');
+                }
             }
 
             collapseDate = null;
@@ -189,7 +215,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
 const getRandomCollapsingString = (): string => {
     const collapsingStrings = [
         'The rumbling intensifies in all directions',
-        'Your bones are being rattled to their core',
+        'Your bones are rattled to the core',
         'Throw your secrets into the darkness',
         'The lights are flickering spookily',
         'Your body begins to stretch as it spaghettifies',

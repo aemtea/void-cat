@@ -1,16 +1,16 @@
-import { CategoryChannel, CommandInteraction, GuildChannelCreateOptions, TextChannel, ThreadChannel } from "discord.js";
+import { CategoryChannel, GuildChannelCreateOptions, Interaction, TextChannel, ThreadChannel } from "discord.js";
 
 const _voidCategoryString = 'HOUSEPLANT ZONE';
 const _voidChannelString = 'the-void';
 
 export module VoidInteractionUtils {
-    export const getVoidCategory = (interaction: CommandInteraction): CategoryChannel => {
+    export const getVoidCategory = (interaction: Interaction): CategoryChannel => {
         const voidCategory = <CategoryChannel>interaction.guild?.channels.cache.find(x => x.name.toUpperCase() === _voidCategoryString && x.type == 'GUILD_CATEGORY');
 
         return voidCategory;
     }
 
-    export const getVoidChannel = (interaction: CommandInteraction): ThreadChannel | null => {
+    export const getVoidChannel = (interaction: Interaction): ThreadChannel | null => {
         const voidCategory = getVoidCategory(interaction);
         if (!voidCategory) {
             return null
@@ -21,7 +21,7 @@ export module VoidInteractionUtils {
         return voidChannel;
     }
 
-    export const createVoidCategory = async (interaction: CommandInteraction): Promise<CategoryChannel> => {
+    export const createVoidCategory = async (interaction: Interaction): Promise<CategoryChannel> => {
         const voidCategory = <CategoryChannel>await interaction.guild?.channels.create(_voidCategoryString, <GuildChannelCreateOptions>{
             type: 4 //ChannelTypes.GUILD_CATEGORY
         });
@@ -29,7 +29,7 @@ export module VoidInteractionUtils {
         return voidCategory;
     }
 
-    export const createVoidChannel = async (interaction: CommandInteraction): Promise<TextChannel> => {
+    export const createVoidChannel = async (interaction: Interaction): Promise<TextChannel> => {
         let voidCategory = getVoidCategory(interaction);
 
         if (!voidCategory) {
