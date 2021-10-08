@@ -1,7 +1,7 @@
 import util from 'util';
 import EventEmitter from 'events';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, Permissions } from 'discord.js';
+import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction, Permissions } from 'discord.js';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 const wait = util.promisify(setTimeout);
@@ -103,10 +103,10 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 components: [row]
             });
 
-            const filter = (i: ButtonInteraction) => i.user.id === interaction.user.id;
+            const filter = (i: MessageComponentInteraction) => i.user.id === interaction.user.id;
             const collector = interaction.channel?.createMessageComponentCollector({ filter, time: 15000 });
 
-            collector?.on('collect', async (i: ButtonInteraction) => {
+            collector?.on('collect', async (i: MessageComponentInteraction) => {
                 if (i.customId === 'collapseNow') {
                     await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapsing the void...', components: [] });
                     await theVoid!.delete();
