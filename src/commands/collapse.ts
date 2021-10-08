@@ -169,7 +169,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
                 await wait(1000);
 
                 if (i === 0) {
-                    const beginRumbling = 'The void begins to rumble...';
+                    const beginRumbling = `The void begins to rumble. ${minutesInput} minutes remaining...`;
                     await interaction.editReply(beginRumbling);
                     await theVoid.send(beginRumbling);
                     continue;
