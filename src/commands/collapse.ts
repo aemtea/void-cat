@@ -1,12 +1,11 @@
 import util from 'util';
 import EventEmitter from 'events';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction, Permissions } from 'discord.js';
+import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction, Permissions, TextChannel } from 'discord.js';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 const wait = util.promisify(setTimeout);
 
-let collapseInProgress = false;
 let collapseDate: Date | null = null;
 
 export const data = new SlashCommandBuilder()
@@ -35,6 +34,8 @@ export const data = new SlashCommandBuilder()
                     .setRequired(false)))
 
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
+    let theVoid: TextChannel | null = null;
+
     try {
         const permissions = new Permissions((<Permissions>interaction.member?.permissions));
         if (!permissions.has('MANAGE_CHANNELS')) {
@@ -47,7 +48,10 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
 
         if (interaction.options.getSubcommand() === 'info') {
             if (!collapseDate) {
-                await interaction.reply('No collapse in progress.');
+                await interaction.reply(<InteractionReplyOptions>{
+                    content: 'No collapse in progress.',
+                    ephemeral: true
+                });
                 return;
             }
 
@@ -58,7 +62,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             return;
         }
 
-        if (collapseInProgress) {
+        if (collapseDate) {
             await interaction.reply(<InteractionReplyOptions>{
                 content: 'Void collapse is in process.',
                 ephemeral: true
@@ -66,7 +70,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             return;
         }
 
-        var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+        theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (!theVoid) {
             await interaction.reply(<InteractionReplyOptions>{
@@ -75,9 +79,16 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             });
             return;
         }
+    } catch (err) {
+        await interaction.reply(<InteractionReplyOptions>{
+            content: 'Failed to get void information.',
+            ephemeral: true
+        });
+        console.log(err);
+        return;
+    }
 
-        collapseInProgress = true;
-
+    try {
         if (interaction.options.getSubcommand() === 'now') {
             await interaction.deferReply(<InteractionDeferReplyOptions>{
                 ephemeral: true
@@ -208,7 +219,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
         await interaction.followUp('The void stabilizes unexpectedly.');
         console.log(err);
     } finally {
-        collapseInProgress = false;
+        collapseDate = null;
     }
 }
 

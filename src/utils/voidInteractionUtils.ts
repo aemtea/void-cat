@@ -1,4 +1,4 @@
-import { CategoryChannel, CategoryCreateChannelOptions, GuildChannelCreateOptions, Interaction, TextChannel, ThreadChannel } from "discord.js";
+import { CategoryChannel, CategoryCreateChannelOptions, GuildChannelCreateOptions, Interaction, TextChannel } from "discord.js";
 
 const _voidCategoryString = 'HOUSEPLANT ZONE';
 const _voidChannelString = 'the-void';
@@ -10,13 +10,13 @@ export module VoidInteractionUtils {
         return voidCategory;
     }
 
-    export const getVoidChannel = (interaction: Interaction): ThreadChannel | null => {
+    export const getVoidChannel = (interaction: Interaction): TextChannel | null => {
         const voidCategory = getVoidCategory(interaction);
         if (!voidCategory) {
             return null
         }
 
-        const voidChannel = <ThreadChannel>interaction.guild?.channels.cache.find(x => x.name.toLowerCase() === _voidChannelString && x.parentId == voidCategory?.id);
+        const voidChannel = <TextChannel>interaction.guild?.channels.cache.find(x => x.name.toLowerCase() === _voidChannelString && x.parentId == voidCategory?.id);
 
         return voidChannel;
     }
