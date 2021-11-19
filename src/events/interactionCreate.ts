@@ -5,7 +5,7 @@ import { Interaction } from "discord.js";
 module.exports = {
     name: 'interactionCreate',
     async execute(eventEmitter: EventEmitter, interaction: Interaction) {
-        if (!interaction.isCommand()) return;
+        if (!interaction.isCommand() && !interaction.isContextMenu()) return;
 
         const command = (<any>interaction.client).commands.get(interaction.commandName);
 

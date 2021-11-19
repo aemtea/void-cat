@@ -25,7 +25,7 @@ const rest = new REST({ version: '9' }).setToken(token);
 (async () => {
     try {
         await rest.put(
-            Routes.applicationGuildCommands(clientId, guildId),
+            Routes.applicationCommands(clientId),
             { body: commands },
         );
 
