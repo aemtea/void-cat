@@ -9,21 +9,15 @@ export const data = new SlashCommandBuilder()
 export const execute = async (interaction: CommandInteraction) => {
     try {
         const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, 'You don\'t have permissions to do that. Sorry!');
             return;
         }
 
         const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'Void already exists.',
-                ephemeral: true
-            });
+            await VoidInteractionUtils.privateReply(interaction, 'Void already exists.');
             return;
         }
 
@@ -31,10 +25,8 @@ export const execute = async (interaction: CommandInteraction) => {
 
         await interaction.reply('You stare into the void. The void stares back at you.');
     } catch (err) {
-        await interaction.reply(<InteractionReplyOptions>{
-            content: 'You call out to the void and hear nothing in return.',
-            ephemeral: true
-        });
+        await VoidInteractionUtils.privateReply(interaction, 'You call out to the void and hear nothing in return.');
         console.log(err);
     }
 }
+

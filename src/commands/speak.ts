@@ -14,33 +14,28 @@ export const data = new SlashCommandBuilder()
 export const execute = async (interaction: CommandInteraction) => {
     try {
         const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, 'You don\'t have permissions to do that. Sorry!');
             return;
         }
 
         var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (!theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'There is no void to speak through.',
-                ephemeral: true
-            });
+            await VoidInteractionUtils.privateReply(interaction, 'There is no void to speak through.');
             return;
         }
         await interaction.deferReply();
-        var incantation = interaction.options.getString('incantation');
+        var incantation = getIncantation(interaction);
 
         await theVoid.send(incantation!);
         await interaction.editReply(`Void Cat repeats your incantation: "${incantation}"`);
     } catch (err) {
-        await interaction.editReply(<InteractionReplyOptions>{
-            content: 'The void refuses your incantation.',
-            ephemeral: true
-        });
+        await VoidInteractionUtils.privateReply(interaction, 'The void refuses your incantation.');
         console.log(err);
     }
+}
+
+const getIncantation = (interaction: CommandInteraction): string | null=> {
+    return interaction.options.getString('incantation');
 }

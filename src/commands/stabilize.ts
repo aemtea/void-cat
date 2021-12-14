@@ -10,29 +10,20 @@ export const data = new SlashCommandBuilder()
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
     try {
         const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, 'You don\'t have permissions to do that. Sorry!');
             return;
         }
 
         const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (!theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'There is no void to stabilize.',
-                ephemeral: true
-            });
+            await VoidInteractionUtils.privateReply(interaction, 'There is no void to stabilize.');
             return;
         }
 
         if (eventEmitter.listenerCount('stabilize') === 0) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'No collapse in progress.',
-                ephemeral: true
-            });
+            await VoidInteractionUtils.privateReply(interaction, 'No collapse in progress.');
             return;
         }
 
@@ -42,10 +33,7 @@ export const execute = async (interaction: CommandInteraction, eventEmitter: Eve
             await interaction.editReply('The void stabilizes.');
         });
     } catch (err) {
-        await interaction.editReply(<InteractionReplyOptions>{
-            content: 'Void failed to stabilize.',
-            ephemeral: true
-        });
+        await VoidInteractionUtils.privateReply(interaction, 'Void failed to stabilize.');
         console.log(err);
     }
 }
