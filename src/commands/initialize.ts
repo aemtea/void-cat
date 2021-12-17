@@ -1,31 +1,31 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
+import { Strings } from '../strings';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 export const data = new SlashCommandBuilder()
-    .setName('initialize')
-    .setDescription('Reaches into the nothingness and returns with the void.');
+    .setName(Strings.Initialize.Name)
+    .setDescription(Strings.Initialize.Description);
 
 export const execute = async (interaction: CommandInteraction) => {
     try {
-        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
         if (!VoidInteractionUtils.canManageChannel(interaction)) {
-            await VoidInteractionUtils.privateReply(interaction, 'You don\'t have permissions to do that. Sorry!');
+            await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
             return;
         }
 
-        const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+        const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
 
-        if (theVoid) {
-            await VoidInteractionUtils.privateReply(interaction, 'Void already exists.');
+        if (voidChannel) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Initialize.VoidExists);
             return;
         }
 
         await VoidInteractionUtils.createVoidChannel(interaction);
 
-        await interaction.reply('You stare into the void. The void stares back at you.');
+        await interaction.reply(Strings.Initialize.VoidCreated);
     } catch (err) {
-        await VoidInteractionUtils.privateReply(interaction, 'You call out to the void and hear nothing in return.');
+        await VoidInteractionUtils.privateReply(interaction, Strings.Initialize.Error);
         console.log(err);
     }
 }

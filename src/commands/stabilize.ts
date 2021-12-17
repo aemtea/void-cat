@@ -1,39 +1,39 @@
 import EventEmitter from 'events';
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
+import { Strings } from '../strings';
 
 export const data = new SlashCommandBuilder()
-    .setName('stabilize')
-    .setDescription('Stabilizes the void if the void is currently collapsing.');
+    .setName(Strings.Stabilize.Name)
+    .setDescription(Strings.Stabilize.Description);
 
 export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
     try {
-        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
         if (!VoidInteractionUtils.canManageChannel(interaction)) {
-            await VoidInteractionUtils.privateReply(interaction, 'You don\'t have permissions to do that. Sorry!');
+            await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
             return;
         }
 
-        const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+        const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
 
-        if (!theVoid) {
-            await VoidInteractionUtils.privateReply(interaction, 'There is no void to stabilize.');
+        if (!voidChannel) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.NoVoid);
             return;
         }
 
         if (eventEmitter.listenerCount('stabilize') === 0) {
-            await VoidInteractionUtils.privateReply(interaction, 'No collapse in progress.');
+            await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.NoCollapse);
             return;
         }
 
         await interaction.deferReply();
 
         eventEmitter.emit('stabilize', interaction, async (interaction: CommandInteraction) => {
-            await interaction.editReply('The void stabilizes.');
+            await interaction.editReply(Strings.Stabilize.Stabilized);
         });
     } catch (err) {
-        await VoidInteractionUtils.privateReply(interaction, 'Void failed to stabilize.');
+        await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.Error);
         console.log(err);
     }
 }
