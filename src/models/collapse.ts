@@ -1,12 +1,16 @@
+import { CommandInteraction } from "discord.js";
+
 export class Collapse {
-    channelId: string;
+    voidChannelId: string;
+    interaction: CommandInteraction;
     collapseStart: Date;
     collapseEnd: Date;
     shouldSmother: boolean;
 
-    constructor(channelId: string, collapseStart: Date, collapseEnd: Date, shouldSmother: boolean)
+    constructor(channelId: string, interaction: CommandInteraction, collapseStart: Date, collapseEnd: Date, shouldSmother: boolean)
     {
-        this.channelId = channelId;
+        this.voidChannelId = channelId;
+        this.interaction = interaction;
         this.collapseStart = collapseStart;
         this.collapseEnd = collapseEnd;
         this.shouldSmother = shouldSmother

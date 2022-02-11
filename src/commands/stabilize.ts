@@ -1,4 +1,4 @@
-import { CommandInteraction } from 'discord.js';
+import { CommandInteraction, InteractionReplyOptions } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 import { Strings } from '../strings';
@@ -22,15 +22,19 @@ export const execute = async (interaction: CommandInteraction) => {
             return;
         }
 
-        if (!CollapseManager.isCollapseInProgress(interaction.channelId)) {
+        if (!CollapseManager.isCollapseInProgress(voidChannel.id)) {
             await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.NoCollapse);
             return;
         }
 
-        await interaction.deferReply();
+        const collapse = CollapseManager.getCollapseInProgress(voidChannel.id);
+        CollapseManager.stabilize(collapse.voidChannelId);
 
-        CollapseManager.stabilize(interaction.channelId);
-        await interaction.editReply(Strings.Stabilize.Stabilized);
+        await interaction.reply(Strings.Stabilize.Stabilized);        
+        await collapse.interaction.followUp(<InteractionReplyOptions>{
+            content: Strings.Collapse.Later.StabilizedBy(interaction.user),
+            ephemeral: true
+        });
     } catch (err) {
         await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.Error);
         console.log(err);

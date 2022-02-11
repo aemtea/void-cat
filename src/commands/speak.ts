@@ -25,6 +25,7 @@ export const execute = async (interaction: CommandInteraction) => {
             await VoidInteractionUtils.privateReply(interaction, Strings.Speak.NoVoid);
             return;
         }
+        
         await interaction.deferReply();
         var incantation = getIncantation(interaction);
 

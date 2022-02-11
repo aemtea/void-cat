@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction } from 'discord.js';
+import { ButtonInteraction, Channel, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction } from 'discord.js';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 import { Strings } from '../strings';
 import * as CollapseManager from '../collapseManager';
@@ -36,8 +36,10 @@ export const execute = async (interaction: CommandInteraction) => {
             await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
             return;
         }
+        const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
+
         if (isCollapseInfo(interaction)) {
-            await collapseInfo(interaction);
+            await collapseInfo(interaction, voidChannel);
             return;
         }
 
@@ -45,8 +47,6 @@ export const execute = async (interaction: CommandInteraction) => {
             await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.CollapseInProgress);
             return;
         }
-
-        let voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
 
         if (!voidChannel) {
             await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.NoVoid);
@@ -70,10 +70,13 @@ export const execute = async (interaction: CommandInteraction) => {
     }
 }
 
-const collapseInfo = async (interaction: CommandInteraction): Promise<void> => {
-    const collapse = CollapseManager.getCollapse(interaction.channelId);
+const collapseInfo = async (interaction: CommandInteraction, voidChannel: Channel | null): Promise<void> => {
+    let collapse;
+    if (voidChannel) {
+        collapse = CollapseManager.getCollapseInProgress(voidChannel.id);
+    }
 
-    if (!collapse) {
+    if (!voidChannel || !collapse) {
         await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.Info.NoCollapse);
         return;
     }
@@ -103,7 +106,7 @@ const collapseNow = async (interaction: CommandInteraction): Promise<void> => {
     collector?.on('collect', async (componentInteraction: MessageComponentInteraction) => {
         if (componentInteraction.customId === Strings.Collapse.Now.ConfirmId) {
             await componentInteraction.update(<InteractionDeferUpdateOptions>{ content: Strings.Collapse.Now.Collapsing, components: [] });
-            let voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
+            const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
             await voidChannel?.delete();
 
             if (shouldSmother(interaction)) {
@@ -125,21 +128,20 @@ const collapseNow = async (interaction: CommandInteraction): Promise<void> => {
 }
 
 const collapseLater = async (interaction: CommandInteraction): Promise<void> => {
-    let minutesInput = getMinutesInput(interaction);
+    const minutesInput = getMinutesInput(interaction);
 
     if (minutesInput < 1) {
         await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.Later.Minutes.LessThanOne);
         return;
     }
 
-    let voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
-
-    await interaction.deferReply();
-
+    const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
     const beginRumbling = Strings.Collapse.Later.BeginCollapse(minutesInput);
-    await interaction.editReply(beginRumbling);
+
+    await interaction.reply(beginRumbling);
     await voidChannel?.send(beginRumbling);
-    CollapseManager.beginCollapse(voidChannel?.id!, minutesInput, shouldSmother(interaction));
+
+    CollapseManager.beginCollapse(voidChannel?.id!, interaction, minutesInput, shouldSmother(interaction));
 }
 
 const isCollapseInfo = (interaction: CommandInteraction) => {

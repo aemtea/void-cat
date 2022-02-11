@@ -1,66 +1,61 @@
-import { CategoryChannel, CategoryCreateChannelOptions, Client, TextChannel } from 'discord.js';
 import * as CollapseManager from './collapseManager';
 import { Strings } from './strings';
+import { VoidInteractionUtils } from './utils/voidInteractionUtils';
 
 export class CollapseWorker {
-    client: Client;
-
-    constructor(client: Client) {
-        this.client = client;
-    }
-
     public doWork = (): void => {
         setInterval(async (): Promise<void> => {
-            const collapsesInProgress = CollapseManager.getCollapseInProgress();
+            const collapsesInProgress = CollapseManager.getCollapsesInProgress();
             if (!collapsesInProgress.length)
                 return;
 
-            const chunks = 5;
             for (let i = 0; i < collapsesInProgress.length; i++) {
                 const collapse = collapsesInProgress[i];
                 const secondsUntilCollapse = collapse.getSecondsUntilColapse();
                 const totalSecondsUntilCollapse = collapse.getTotalSecondsUntilCollapse();
 
-                const voidChannel = <TextChannel>this.client.channels.cache.get(collapse.channelId);
-                const voidCategory = <CategoryChannel>this.client.channels.cache.get(voidChannel.parentId!);
-                if (secondsUntilCollapse === totalSecondsUntilCollapse - 60) {
-                    // Give a final notice one minute before collapsing
-                    await voidChannel?.send(Strings.Collapse.Later.FinalWarning);
-                    return;
-                } else if (secondsUntilCollapse % (totalSecondsUntilCollapse / chunks) === 0) {
-                    // TODO don't post message immediately
-                    await voidChannel?.send(this.getRandomCollapsingString());
+                const voidChannel = VoidInteractionUtils.getVoidChannel(collapse.interaction);
+                const message = this.getCollapsingMessage(secondsUntilCollapse, totalSecondsUntilCollapse);
+                
+                if (message) {
+                    console.log(`Sending message at ${secondsUntilCollapse} seconds until collapse.`);
+                    await voidChannel?.send(message);
                 }
 
-                if (CollapseManager.shouldCollapse(collapse)) {
-                    CollapseManager.endCollapse(collapse);
-                    await voidChannel?.delete();
+                if (!CollapseManager.shouldCollapse(collapse)) {
+                    continue;
+                }
 
-                    if (collapse.shouldSmother) {
-                        // TODO post smother message
-                        // if (interaction.channelId != voidChannel?.id) {
-                        //     await interaction.followUp(Strings.Collapse.Later.Smothered);
-                        // }
-                    } else {
-                        await this.createVoidChannel(voidCategory);
-                        // TODO post collapsed message
-                        // if (interaction.channelId != voidChannel?.id) {
-                        //     await interaction.followUp(Strings.Collapse.Later.Collapsed);
-                        // }
+                CollapseManager.endCollapse(collapse);
+                await voidChannel?.delete();
+
+                if (collapse.shouldSmother) {
+                    if (collapse.interaction.channelId != voidChannel?.id) {
+                        await collapse.interaction.followUp(Strings.Collapse.Later.Smothered);
+                    }
+                } else {
+                    VoidInteractionUtils.createVoidChannel(collapse.interaction)
+                    if (collapse.interaction.channelId != voidChannel?.id) {
+                        await collapse.interaction.followUp(Strings.Collapse.Later.Collapsed);
                     }
                 }
             }
 
-
         }, 1000);
     }
 
-    private createVoidChannel = async (voidCategory: CategoryChannel): Promise<TextChannel> => {
-        const voidChannel = <TextChannel>await voidCategory.createChannel('', <CategoryCreateChannelOptions> {
-            nsfw: true
-        });
-
-        return voidChannel;
+    private getCollapsingMessage = (secondsUntilCollapse: number, totalSecondsUntilCollapse: number): string | null => {
+        const chunks =  process.env.MESSAGE_CHUNKS ? parseInt(process.env.MESSAGE_CHUNKS) :  6;
+        if (secondsUntilCollapse === totalSecondsUntilCollapse || secondsUntilCollapse === 0) {
+            return null;
+        } else if (secondsUntilCollapse === 60) {
+            // Give a final notice one minute before collapsing            
+            return Strings.Collapse.Later.FinalWarning;
+        } else if (secondsUntilCollapse % (totalSecondsUntilCollapse / chunks) === 0) {
+            return this.getRandomCollapsingString();
+        } else {
+            return null;
+        }
     }
 
     private getRandomCollapsingString = (): string => {

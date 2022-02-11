@@ -1,13 +1,18 @@
+import { CommandInteraction } from "discord.js";
 import { Collapse } from "./models/collapse";
 
 let collapsesInProgress: Collapse[] = [];
 
-export const getCollapse = (chanelId: string): Collapse => {
-    return collapsesInProgress.filter(c => c.channelId === chanelId)[0];
+export const getCollapsesInProgress = (): Collapse[] => {
+    return collapsesInProgress;
+}
+
+export const getCollapseInProgress = (chanelId: string): Collapse => {
+    return collapsesInProgress.filter(c => c.voidChannelId === chanelId)[0];
 }
 
 export const isCollapseInProgress = (channelId: string): boolean => {
-    return collapsesInProgress.some(c => c.channelId === channelId);
+    return collapsesInProgress.some(c => c.voidChannelId === channelId);
 }
 
 export const shouldCollapse = (collapse: Collapse): boolean => {
@@ -19,15 +24,16 @@ export const shouldCollapse = (collapse: Collapse): boolean => {
 }
 
 export const stabilize = (channelId: string) => {
-    collapsesInProgress = collapsesInProgress.filter(c => c.channelId !== channelId);
+    collapsesInProgress = collapsesInProgress.filter(c => c.voidChannelId !== channelId);
 }
 
-export const beginCollapse = (channelId: string, minutes: number, shouldSmother: boolean): void => {
+export const beginCollapse = (channelId: string, interaction: CommandInteraction, minutes: number, shouldSmother: boolean): void => {
     const now = new Date();
     const mintuesInMilliseconds = minutes * 60000;
 
     const collapse = new Collapse(
         channelId,
+        interaction,
         now,
         new Date(now.getTime() + mintuesInMilliseconds),
         shouldSmother);
@@ -36,9 +42,5 @@ export const beginCollapse = (channelId: string, minutes: number, shouldSmother:
 }
 
 export const endCollapse = (collapse: Collapse): void => {
-    stabilize(collapse.channelId);
-}
-
-export const getCollapseInProgress = (): Collapse[] => {
-    return collapsesInProgress;
+    stabilize(collapse.voidChannelId);
 }

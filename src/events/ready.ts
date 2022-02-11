@@ -8,7 +8,7 @@ module.exports = {
     execute(client: Client) {
         console.log(`Ready! Logged in as ${(<any>client).user.tag}`);
 
-        var collapseWorker = new CollapseWorker(client);
+        var collapseWorker = new CollapseWorker();
 
         collapseWorker.doWork();
     },
