@@ -18,7 +18,6 @@ export class CollapseWorker {
                 const message = this.getCollapsingMessage(secondsUntilCollapse, totalSecondsUntilCollapse);
                 
                 if (message) {
-                    console.log(`Sending message at ${secondsUntilCollapse} seconds until collapse.`);
                     await voidChannel?.send(message);
                 }
 
