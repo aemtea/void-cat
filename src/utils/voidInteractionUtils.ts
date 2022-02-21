@@ -1,4 +1,4 @@
-import { CategoryChannel, CategoryCreateChannelOptions, GuildChannelCreateOptions, Interaction, TextChannel } from "discord.js";
+import { CategoryChannel, CategoryCreateChannelOptions, CommandInteraction, GuildChannelCreateOptions, Interaction, InteractionReplyOptions, Permissions, TextChannel } from "discord.js";
 
 const _voidCategoryString = 'HOUSEPLANT ZONE';
 const _voidChannelString = 'the-void';
@@ -41,5 +41,17 @@ export module VoidInteractionUtils {
         });
 
         return voidChannel;
+    }
+
+    export const canManageChannel = (interaction: Interaction): boolean => {
+        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
+        return permissions.has('MANAGE_CHANNELS');
+    }
+
+    export const privateReply = async (interaction: CommandInteraction, message: string): Promise<void> => {
+        return interaction.reply(<InteractionReplyOptions>{
+            content: message,
+            ephemeral: true
+        });
     }
 }

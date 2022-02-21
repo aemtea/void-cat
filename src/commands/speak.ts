@@ -1,46 +1,42 @@
 
 import { SlashCommandBuilder } from "@discordjs/builders";
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from "discord.js";
+import { CommandInteraction } from "discord.js";
+import { Strings } from "../strings";
 import { VoidInteractionUtils } from "../utils/voidInteractionUtils";
 
 export const data = new SlashCommandBuilder()
-    .setName('speak')
-    .setDescription('Speak through the Void Cat.')
+    .setName(Strings.Speak.Name)
+    .setDescription(Strings.Speak.Description)
     .addStringOption(option =>
-        option.setName('incantation')
-            .setDescription('The incantation to speak.')
+        option.setName(Strings.Speak.Incancation.Name)
+            .setDescription(Strings.Speak.Incancation.Description)
             .setRequired(true));
 
 export const execute = async (interaction: CommandInteraction) => {
     try {
-        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
             return;
         }
 
-        var theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+        var voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
 
-        if (!theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'There is no void to speak through.',
-                ephemeral: true
-            });
+        if (!voidChannel) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Speak.NoVoid);
             return;
         }
+        
         await interaction.deferReply();
-        var incantation = interaction.options.getString('incantation');
+        var incantation = getIncantation(interaction);
 
-        await theVoid.send(incantation!);
-        await interaction.editReply(`Void Cat repeats your incantation: "${incantation}"`);
+        await voidChannel.send(incantation!);
+        await interaction.editReply(Strings.Speak.RepeatIncanation(incantation));
     } catch (err) {
-        await interaction.editReply(<InteractionReplyOptions>{
-            content: 'The void refuses your incantation.',
-            ephemeral: true
-        });
+        await VoidInteractionUtils.privateReply(interaction, Strings.Speak.Error);
         console.log(err);
     }
+}
+
+const getIncantation = (interaction: CommandInteraction): string => {
+    return interaction.options.getString(Strings.Speak.Incancation.Name, true);
 }

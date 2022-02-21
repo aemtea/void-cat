@@ -1,243 +1,182 @@
-import util from 'util';
-import EventEmitter from 'events';
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { ButtonInteraction, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction, Permissions, TextChannel } from 'discord.js';
+import { ButtonInteraction, Channel, Collection, CommandInteraction, InteractionDeferReplyOptions, InteractionDeferUpdateOptions, InteractionReplyOptions, MessageActionRow, MessageButton, MessageComponentInteraction } from 'discord.js';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
-
-const wait = util.promisify(setTimeout);
-
-let collapseDate: Date | null = null;
+import { Strings } from '../strings';
+import * as CollapseManager from '../collapseManager';
 
 export const data = new SlashCommandBuilder()
-    .setName('collapse')
-    .setDescription('Collapses the void into nothingness.')
+    .setName(Strings.Collapse.Name)
+    .setDescription(Strings.Collapse.Description)
     .addSubcommand(subcommand =>
-        subcommand.setName('later')
-            .setDescription('Collapses the void in a set amount of time. Recreates the void by default.')
+        subcommand.setName(Strings.Collapse.Later.Name)
+            .setDescription(Strings.Collapse.Later.Description)
             .addIntegerOption(option =>
-                option.setName('minutes')
-                    .setDescription('Number of minutes until void collapse.')
+                option.setName(Strings.Collapse.Later.Minutes.Name)
+                    .setDescription(Strings.Collapse.Later.Minutes.Description)
                     .setRequired(true))
             .addBooleanOption(option =>
-                option.setName('smother')
-                    .setDescription('Will not recreate the void if true.')
+                option.setName(Strings.Collapse.Smother.Name)
+                    .setDescription(Strings.Collapse.Smother.Description)
                     .setRequired(false)))
     .addSubcommand(subcommand =>
-        subcommand.setName('info')
-            .setDescription('Gets info about collapse in progress.'))
+        subcommand.setName(Strings.Collapse.Info.Name)
+            .setDescription(Strings.Collapse.Info.Description))
     .addSubcommand(subcommand =>
-        subcommand.setName('now')
-            .setDescription('Immediately collapses the void. Recreates the void by default.')
+        subcommand.setName(Strings.Collapse.Now.Name)
+            .setDescription(Strings.Collapse.Now.Description)
             .addBooleanOption(option =>
-                option.setName('smother')
-                    .setDescription('Will not recreate the void if true.')
+                option.setName(Strings.Collapse.Smother.Name)
+                    .setDescription(Strings.Collapse.Smother.Description)
                     .setRequired(false)))
 
-export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
-    let theVoid: TextChannel | null = null;
+export const execute = async (interaction: CommandInteraction) => {
 
     try {
-        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
+            return;
+        }
+        const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
+
+        if (isCollapseInfo(interaction)) {
+            await collapseInfo(interaction, voidChannel);
             return;
         }
 
-        if (interaction.options.getSubcommand() === 'info') {
-            if (!collapseDate) {
-                await interaction.reply(<InteractionReplyOptions>{
-                    content: 'No collapse in progress.',
-                    ephemeral: true
-                });
-                return;
-            }
-
-            //Get difference in minutes to 2 decimals
-            let now = new Date();
-            let minutesUntilCollapse = ((collapseDate?.getTime() - now.getTime()) / 1000 / 60).toFixed(2);
-            await interaction.reply(`Void will collapse in ${minutesUntilCollapse} minutes.`);
+        if (CollapseManager.isCollapseInProgress(interaction.channelId)) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.CollapseInProgress);
             return;
         }
 
-        if (collapseDate) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'Void collapse is in process.',
-                ephemeral: true
-            });
-            return;
-        }
-
-        theVoid = VoidInteractionUtils.getVoidChannel(interaction);
-
-        if (!theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'There is no void to collapse.',
-                ephemeral: true
-            });
+        if (!voidChannel) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.NoVoid);
             return;
         }
     } catch (err) {
-        await interaction.reply(<InteractionReplyOptions>{
-            content: 'Failed to get void information.',
-            ephemeral: true
-        });
+        await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.Info.Error);
         console.log(err);
         return;
     }
 
     try {
-        if (interaction.options.getSubcommand() === 'now') {
-            await interaction.deferReply(<InteractionDeferReplyOptions>{
-                ephemeral: true
-            });
-
-            const row = new MessageActionRow()
-                .addComponents(
-                    new MessageButton()
-                        .setCustomId('collapseCancel')
-                        .setLabel('Cancel')
-                        .setStyle(2) //SECONDARY
-                )
-                .addComponents(
-                    new MessageButton()
-                        .setCustomId('collapseNow')
-                        .setLabel('Collapse')
-                        .setStyle(4) //DANGER
-                );
-
-            await interaction.editReply(<InteractionReplyOptions>{
-                content: 'Are you sure you want to collapse the void?',
-                ephemeral: true,
-                components: [row]
-            });
-
-            const filter = (i: MessageComponentInteraction) => i.user.id === interaction.user.id;
-            const collector = interaction.channel?.createMessageComponentCollector({ filter, time: 15000 });
-
-            collector?.on('collect', async (i: MessageComponentInteraction) => {
-                if (i.customId === 'collapseNow') {
-                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapsing the void...', components: [] });
-                    await theVoid!.delete();
-
-                    if (interaction.options.getBoolean('smother')) {
-                        if (interaction.channelId != theVoid?.id) {
-                            await i.followUp(`Void collapsed by ${interaction.user}.`);
-                        }
-                    } else {
-                        if (interaction.channelId != theVoid?.id) {
-                            VoidInteractionUtils.createVoidChannel(interaction);
-                            await i.followUp(`Void collapsed by ${interaction.user}. It reappears in an instant.`);
-                        }
-                    }
-                } else if (i.customId === 'collapseCancel') {
-                    await i.update(<InteractionDeferUpdateOptions>{ content: 'Collapse cancelled.', components: [] });
-                }
-            });
-
-            collector?.on('end', (collected: Collection<string, ButtonInteraction>) => console.log(`Collectoed ${collected.size} items`));
-        } else if (interaction.options.getSubcommand() === 'later') {
-            let stabilized = false;
-            const voidStabilizesString = 'The void stabilizes.';
-            let minutesInput = interaction.options.getInteger('minutes', true);
-
-            if (minutesInput < 1) {
-                await interaction.reply(<InteractionReplyOptions>{
-                    content: 'Minutes must be greater than or equal to 1.',
-                    ephemeral: true
-                });
-                return;
-            }
-
-            //Add minutes input to current time
-            collapseDate = new Date(Date.now() + minutesInput * 60000);
-
-            //Listen for the stabilize command while a collapse is in progress
-            eventEmitter.once('stabilize', async (stabilizeInteraction: CommandInteraction, callback: (collapseInteraction: CommandInteraction) => Promise<void>) => {
-                stabilized = true;
-                collapseDate = null;
-                await interaction.followUp(<InteractionReplyOptions>{
-                    content: `Void stabilized by ${stabilizeInteraction.user}`,
-                    ephemeral: true
-                });
-
-                callback(stabilizeInteraction);
-            });
-
-            //Split collapse into chunks
-            let chunks = 5;
-            let secondsUntilCollapse = minutesInput * 60;
-
-            await interaction.deferReply();
-            for (let i = 0; i < secondsUntilCollapse; i++) {
-                if (stabilized) {
-                    await theVoid.send(voidStabilizesString);
-                    return;
-                }
-
-                await wait(1000);
-
-                if (i === 0) {
-                    const beginRumbling = `The void begins to rumble. ${minutesInput} minutes remaining...`;
-                    await interaction.editReply(beginRumbling);
-                    await theVoid.send(beginRumbling);
-                    continue;
-                }
-
-                if (i + 1 === secondsUntilCollapse - 60) {
-                    //Give a final notice one minute before collapsing
-                    await theVoid.send('The void is almost no more. Have you accepted its fate?');
-                    continue;
-                } else if (i + 1 > secondsUntilCollapse - 60) {
-                    continue;
-                }
-
-                if ((i + 1) % (secondsUntilCollapse / chunks) === 0) {
-                    await theVoid.send(getRandomCollapsingString());
-                }
-            }
-
-            await theVoid.delete();
-
-            if (interaction.options.getBoolean('smother')) {
-                if (interaction.channelId != theVoid.id) {
-                    await interaction.followUp('The void vanishes without a trace.');
-                }
-            } else {
-                VoidInteractionUtils.createVoidChannel(interaction);
-
-                if (interaction.channelId != theVoid.id) {
-                    await interaction.followUp('The void collapses and reappears in an instant.');
-                }
-            }
-
-            collapseDate = null;
+        if (isCollapseNow(interaction)) {
+            await collapseNow(interaction);
+        } else if (isCollapseLater(interaction)) {
+            await collapseLater(interaction);
         }
     } catch (err) {
-        await interaction.followUp('The void stabilizes unexpectedly.');
+        await interaction.followUp(Strings.Collapse.Error);
         console.log(err);
-    } finally {
-        collapseDate = null;
     }
 }
 
-const getRandomCollapsingString = (): string => {
-    const collapsingStrings = [
-        'The rumbling intensifies in all directions',
-        'Your bones are rattled to the core',
-        'Throw your secrets into the darkness',
-        'The lights are flickering spookily',
-        'Your body begins to stretch as it spaghettifies',
-        'AHHHHHHHH'
-    ];
-    const index = getRandomIntInclusive(0, collapsingStrings.length - 1);
-    return collapsingStrings[index];
+const collapseInfo = async (interaction: CommandInteraction, voidChannel: Channel | null): Promise<void> => {
+    let collapse;
+    if (voidChannel) {
+        collapse = CollapseManager.getCollapseInProgress(voidChannel.id);
+    }
+
+    if (!voidChannel || !collapse) {
+        await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.Info.NoCollapse);
+        return;
+    }
+
+    const minutesUntilCollapse = collapse.getMinutesUntilColapse();
+    await interaction.reply(Strings.Collapse.Info.MinutesRemaining(minutesUntilCollapse));
+    return;
 }
 
-const getRandomIntInclusive = (min: number, max: number) => {
-    min = Math.ceil(min);
-    max = Math.floor(max);
-    return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
+const collapseNow = async (interaction: CommandInteraction): Promise<void> => {
+    await interaction.deferReply(<InteractionDeferReplyOptions>{
+        ephemeral: true
+    });
+
+    const buttons = getCollapseNowButtons();
+
+    await interaction.editReply(<InteractionReplyOptions>{
+        content: Strings.Collapse.Now.Confirm,
+        ephemeral: true,
+        components: [buttons]
+    });
+
+    const filter = (componentInteraction: MessageComponentInteraction) => componentInteraction.user.id === interaction.user.id;
+    const collector = interaction.channel?.createMessageComponentCollector({ filter, time: 15000 });
+
+    // Executed after button click
+    collector?.on('collect', async (componentInteraction: MessageComponentInteraction) => {
+        if (componentInteraction.customId === Strings.Collapse.Now.ConfirmId) {
+            await componentInteraction.update(<InteractionDeferUpdateOptions>{ content: Strings.Collapse.Now.Collapsing, components: [] });
+            const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
+            await voidChannel?.delete();
+
+            if (shouldSmother(interaction)) {
+                if (interaction.channelId != voidChannel?.id) {
+                    await componentInteraction.followUp(Strings.Collapse.Now.CollapsedBySmother(interaction.user));
+                }
+            } else {
+                if (interaction.channelId != voidChannel?.id) {
+                    await VoidInteractionUtils.createVoidChannel(interaction);
+                    await componentInteraction.followUp(Strings.Collapse.Now.CollapsedBy(interaction.user));
+                }
+            }
+        } else if (componentInteraction.customId === Strings.Collapse.Now.CancelId) {
+            await componentInteraction.update(<InteractionDeferUpdateOptions>{ content: Strings.Collapse.Now.Cancelled, components: [] });
+        }
+    });
+
+    collector?.on('end', (collected: Collection<string, ButtonInteraction>) => console.log(`Collectoed ${collected.size} items`));
+}
+
+const collapseLater = async (interaction: CommandInteraction): Promise<void> => {
+    const minutesInput = getMinutesInput(interaction);
+
+    if (minutesInput < 1) {
+        await VoidInteractionUtils.privateReply(interaction, Strings.Collapse.Later.Minutes.LessThanOne);
+        return;
+    }
+
+    const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
+    const beginRumbling = Strings.Collapse.Later.BeginCollapse(minutesInput);
+
+    await interaction.reply(beginRumbling);
+    await voidChannel?.send(beginRumbling);
+
+    CollapseManager.beginCollapse(voidChannel?.id!, interaction, minutesInput, shouldSmother(interaction));
+}
+
+const isCollapseInfo = (interaction: CommandInteraction) => {
+    return interaction.options.getSubcommand() === Strings.Collapse.Info.Name;
+}
+
+const isCollapseNow = (interaction: CommandInteraction) => {
+    return interaction.options.getSubcommand() === Strings.Collapse.Now.Name;
+}
+
+const isCollapseLater = (interaction: CommandInteraction) => {
+    return interaction.options.getSubcommand() === Strings.Collapse.Later.Name;
+}
+
+const getCollapseNowButtons = (): MessageActionRow => {
+    return new MessageActionRow()
+        .addComponents(
+            new MessageButton()
+                .setCustomId(Strings.Collapse.Now.CancelId)
+                .setLabel(Strings.Collapse.Now.CancelLabel)
+                .setStyle(2) //SECONDARY
+        )
+        .addComponents(
+            new MessageButton()
+                .setCustomId(Strings.Collapse.Now.ConfirmId)
+                .setLabel(Strings.Collapse.Now.ConfirmLabel)
+                .setStyle(4) //DANGER
+        );
+}
+
+const getMinutesInput = (interaction: CommandInteraction): number => {
+    return interaction.options.getInteger(Strings.Collapse.Later.Minutes.Name, true);
+}
+
+const shouldSmother = (interaction: CommandInteraction): boolean => {
+    var shouldSmother = interaction.options.getBoolean(Strings.Collapse.Smother.Name);
+    return shouldSmother != null ? shouldSmother : false;
 }

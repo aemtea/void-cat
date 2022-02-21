@@ -1,40 +1,32 @@
 import { SlashCommandBuilder } from '@discordjs/builders';
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
+import { Strings } from '../strings';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 export const data = new SlashCommandBuilder()
-    .setName('initialize')
-    .setDescription('Reaches into the nothingness and returns with the void.');
+    .setName(Strings.Initialize.Name)
+    .setDescription(Strings.Initialize.Description);
 
 export const execute = async (interaction: CommandInteraction) => {
     try {
-        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
             return;
         }
 
-        const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+        const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
 
-        if (theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'Void already exists.',
-                ephemeral: true
-            });
+        if (voidChannel) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Initialize.VoidExists);
             return;
         }
 
         await VoidInteractionUtils.createVoidChannel(interaction);
 
-        await interaction.reply('You stare into the void. The void stares back at you.');
+        await interaction.reply(Strings.Initialize.VoidCreated);
     } catch (err) {
-        await interaction.reply(<InteractionReplyOptions>{
-            content: 'You call out to the void and hear nothing in return.',
-            ephemeral: true
-        });
+        await VoidInteractionUtils.privateReply(interaction, Strings.Initialize.Error);
         console.log(err);
     }
 }
+

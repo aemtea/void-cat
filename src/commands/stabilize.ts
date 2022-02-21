@@ -1,51 +1,42 @@
-import EventEmitter from 'events';
-import { CommandInteraction, InteractionDeferReplyOptions, InteractionReplyOptions, Permissions } from 'discord.js';
+import { CommandInteraction, InteractionReplyOptions } from 'discord.js';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
+import { Strings } from '../strings';
+import * as CollapseManager from '../collapseManager';
 
 export const data = new SlashCommandBuilder()
-    .setName('stabilize')
-    .setDescription('Stabilizes the void if the void is currently collapsing.');
+    .setName(Strings.Stabilize.Name)
+    .setDescription(Strings.Stabilize.Description);
 
-export const execute = async (interaction: CommandInteraction, eventEmitter: EventEmitter) => {
+export const execute = async (interaction: CommandInteraction) => {
     try {
-        const permissions = new Permissions((<Permissions>interaction.member?.permissions));
-        if (!permissions.has('MANAGE_CHANNELS')) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'You don\'t have permissions to do that. Sorry!',
-                ephemeral: true
-            });
+        if (!VoidInteractionUtils.canManageChannel(interaction)) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.General.NoPermission);
             return;
         }
 
-        const theVoid = VoidInteractionUtils.getVoidChannel(interaction);
+        const voidChannel = VoidInteractionUtils.getVoidChannel(interaction);
 
-        if (!theVoid) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'There is no void to stabilize.',
-                ephemeral: true
-            });
+        if (!voidChannel) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.NoVoid);
             return;
         }
 
-        if (eventEmitter.listenerCount('stabilize') === 0) {
-            await interaction.reply(<InteractionReplyOptions>{
-                content: 'No collapse in progress.',
-                ephemeral: true
-            });
+        if (!CollapseManager.isCollapseInProgress(voidChannel.id)) {
+            await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.NoCollapse);
             return;
         }
 
-        await interaction.deferReply();
+        const collapse = CollapseManager.getCollapseInProgress(voidChannel.id);
+        CollapseManager.stabilize(collapse.voidChannelId);
 
-        eventEmitter.emit('stabilize', interaction, async (interaction: CommandInteraction) => {
-            await interaction.editReply('The void stabilizes.');
-        });
-    } catch (err) {
-        await interaction.editReply(<InteractionReplyOptions>{
-            content: 'Void failed to stabilize.',
+        await interaction.reply(Strings.Stabilize.Stabilized);        
+        await collapse.interaction.followUp(<InteractionReplyOptions>{
+            content: Strings.Collapse.Later.StabilizedBy(interaction.user),
             ephemeral: true
         });
+    } catch (err) {
+        await VoidInteractionUtils.privateReply(interaction, Strings.Stabilize.Error);
         console.log(err);
     }
 }

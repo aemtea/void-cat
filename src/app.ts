@@ -1,12 +1,9 @@
-// Require the necessary discord.js classes
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import EventEmitter from 'events';
 import { Client, Collection, Intents } from 'discord.js';
 
 dotenv.config();
-const eventEmitter = new EventEmitter();
 
 // Create a new client instance
 const client = new Client({ intents: [Intents.FLAGS.GUILDS] });
@@ -18,7 +15,7 @@ for (const file of eventFiles) {
     if (event.once) {
         client.once(event.name, (...args) => event.execute(...args));
     } else {
-        client.on(event.name, (...args) => event.execute(eventEmitter, ...args));
+        client.on(event.name, (...args) => event.execute(...args));
     }
 }
 
