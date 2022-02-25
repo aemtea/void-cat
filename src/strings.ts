@@ -116,4 +116,10 @@ export namespace Strings {
             }
         }
     }
+
+    export namespace Pet {
+        export const Name: string = 'pet';
+        export const Description: string = 'Pet the Void Cat. It doesn\'t bite... At least I don\'t think it does.';
+        export const Error: string = 'Void Cat isn\'t in the mood right now.';
+    }
 }
