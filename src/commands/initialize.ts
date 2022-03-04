@@ -5,7 +5,8 @@ import { VoidInteractionUtils } from '../utils/voidInteractionUtils';
 
 export const data = new SlashCommandBuilder()
     .setName(Strings.Initialize.Name)
-    .setDescription(Strings.Initialize.Description);
+    .setDescription(Strings.Initialize.Description)
+    .setDefaultPermission(false);
 
 export const execute = async (interaction: CommandInteraction) => {
     try {

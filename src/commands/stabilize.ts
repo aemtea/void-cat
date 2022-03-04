@@ -6,7 +6,8 @@ import * as CollapseManager from '../collapseManager';
 
 export const data = new SlashCommandBuilder()
     .setName(Strings.Stabilize.Name)
-    .setDescription(Strings.Stabilize.Description);
+    .setDescription(Strings.Stabilize.Description)
+    .setDefaultPermission(false);
 
 export const execute = async (interaction: CommandInteraction) => {
     try {
