@@ -1,4 +1,5 @@
-import { User } from "discord.js";
+import { APIRole } from "discord-api-types";
+import { User, Role } from "discord.js";
 
 export namespace Strings {
     export namespace General {
@@ -121,5 +122,20 @@ export namespace Strings {
         export const Name: string = 'pet';
         export const Description: string = 'Pet the Void Cat. It doesn\'t bite... At least I don\'t think it does.';
         export const Error: string = 'Void Cat isn\'t in the mood right now.';
+    }
+
+    export namespace Commune {
+        export const Name: string = 'commune';
+        export const Description: string = 'Grants the ability to commune with the Void Cat.';
+        export const Error: string = 'Failed to commune with Void Cat.';
+
+        export namespace Role {
+            export const Name: string = 'role';
+            export const Description: string = 'The role Void Cat will commune with.';
+        }
+
+        export const Success = (role: Role | APIRole): string => {
+            return `${role} may now commune with Void Cat.`;
+        }
     }
 }
