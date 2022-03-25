@@ -2,7 +2,6 @@ import { SlashCommandBuilder } from "@discordjs/builders";
 import { APIRole } from "discord-api-types";
 import { ApplicationCommand, ApplicationCommandPermissions, CommandInteraction, GuildResolvable, Role } from "discord.js";
 import { Strings } from "../strings";
-import { VoidInteractionUtils } from "../utils/voidInteractionUtils";
 
 export const data = new SlashCommandBuilder()
     .setName(Strings.Commune.Name)
@@ -24,14 +23,14 @@ export const execute = async (interaction: CommandInteraction) => {
         var role = getRole(interaction);
         var promises: Promise<ApplicationCommandPermissions[]>[] = [];
         commands.forEach(command => {
-            promises.push(grantPermission(interaction, command, role));
+            promises.push(grantPermission(interaction, role, command));
         });
 
         Promise.all(promises).then(async _ => {
             await interaction.editReply(Strings.Commune.Success(role));
         }).catch(async _ => {
             await interaction.editReply(Strings.Commune.Error);
-        })
+        });
     } catch (err) {
         if (interaction.deferred) {
             await interaction.editReply(Strings.Commune.Error);
@@ -43,16 +42,22 @@ export const execute = async (interaction: CommandInteraction) => {
     }
 }
 
-const grantPermission = async (interaction: CommandInteraction, command: ApplicationCommand<{guild: GuildResolvable}>, role: Role | APIRole): Promise<ApplicationCommandPermissions[]> => {
+const grantPermission = async (interaction: CommandInteraction, role: Role | APIRole, command: ApplicationCommand<{guild: GuildResolvable}>): Promise<ApplicationCommandPermissions[]> => {
     var permissions = await command.permissions.fetch({guild: interaction.guild!});
     var rolePermission = permissions.filter(permission => permission.id === role.id)[0];
 
-    if (!rolePermission) {
+    if (rolePermission && rolePermission.permission) {
+        return new Promise<ApplicationCommandPermissions[]>((resolve, reject) => {
+            resolve(permissions);
+        });
+    } else if (!rolePermission) {
         permissions.push({
             id: role.id,
             type: 'ROLE',
             permission: true
         });
+    } else if (!rolePermission.permission) {
+        rolePermission.permission = true;
     }
 
     var promise = command.permissions.set({
@@ -61,7 +66,7 @@ const grantPermission = async (interaction: CommandInteraction, command: Applica
     });
 
     promise.catch(err => {
-        console.log(`Error setting permission for role ${role.name} on command: ${command.name} with error: ${err}`);
+        console.log(`Error setting permission for role ${role.name} on command ${command.name} with error: ${err}`);
     });
 
     return promise;
