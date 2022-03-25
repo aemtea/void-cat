@@ -7,6 +7,7 @@ import * as CollapseManager from '../collapseManager';
 export const data = new SlashCommandBuilder()
     .setName(Strings.Collapse.Name)
     .setDescription(Strings.Collapse.Description)
+    .setDefaultPermission(false)
     .addSubcommand(subcommand =>
         subcommand.setName(Strings.Collapse.Later.Name)
             .setDescription(Strings.Collapse.Later.Description)

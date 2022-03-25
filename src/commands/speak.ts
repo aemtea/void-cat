@@ -1,4 +1,3 @@
-
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
 import { Strings } from "../strings";
@@ -7,6 +6,7 @@ import { VoidInteractionUtils } from "../utils/voidInteractionUtils";
 export const data = new SlashCommandBuilder()
     .setName(Strings.Speak.Name)
     .setDescription(Strings.Speak.Description)
+    .setDefaultPermission(false)
     .addStringOption(option =>
         option.setName(Strings.Speak.Incancation.Name)
             .setDescription(Strings.Speak.Incancation.Description)

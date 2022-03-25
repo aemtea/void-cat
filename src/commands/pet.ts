@@ -1,12 +1,12 @@
 import { SlashCommandBuilder } from "@discordjs/builders";
 import { CommandInteraction } from "discord.js";
 import { Strings } from "../strings";
-import { VoidInteractionUtils } from "../utils/voidInteractionUtils";
 import * as tenorUtils from '../utils/tenorUtils';
 
 export const data = new SlashCommandBuilder()
     .setName(Strings.Pet.Name)
-    .setDescription(Strings.Pet.Description);
+    .setDescription(Strings.Pet.Description)
+    .setDefaultPermission(true);
 
 export const execute = async (interaction: CommandInteraction) => {
     try {
